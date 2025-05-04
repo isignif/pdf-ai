@@ -64,6 +64,15 @@ export function useIsignifOCR(
   });
 
   async function computeFile(file: File) {
+    // endure the token is valid
+    try {
+      // TODO: find a more efficient way
+      const { ok } = await isignifApi.acts.actsList();
+      if (!ok) throw Error("Token is not valid");
+    } catch {
+      throw Error("Token is not valid");
+    }
+
     const ocrFile = await getOcrPages(file);
     await waitPolite();
     const ocrFileContent = ocrFile.map((p) => p.markdown).join("\n---\n");
