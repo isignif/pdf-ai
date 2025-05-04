@@ -9,9 +9,6 @@ import { Mistral } from "@mistralai/mistralai";
 const apiKey = process.env.MISTRAL_API_KEY;
 if (!apiKey) throw new Error("Missing OpenAI API key");
 
-// TODO: get from ENV
-const isignifBaseUrl = "http://localhost:3000/api/v1";
-
 const mistral = new Mistral({ apiKey });
 
 const app = new Hono();
@@ -19,7 +16,7 @@ const app = new Hono();
 app.use(logger());
 
 app.post(
-  "/from-pdf",
+  "/guess-pdf",
   zValidator("header", z.object({ authorization: z.string() })),
   zValidator(
     "form",
@@ -29,21 +26,23 @@ app.post(
         .refine((file) => file.type === "application/pdf", {
           message: "File must be a PDF",
         }),
+      isignifApiUrl: z.string().default("http://isignif.fr/api/v1"),
     }),
   ),
   async (c) => {
     const { authorization: iSignifToken } = c.req.valid("header");
-    const { file } = c.req.valid("form");
+    const { file, isignifApiUrl } = c.req.valid("form");
 
-    const { computeFile } = useIsignifOCR(
-      mistral,
-      isignifBaseUrl,
-      iSignifToken,
-    );
+    const { computeFile } = useIsignifOCR(mistral, isignifApiUrl, iSignifToken);
 
-    const res = await computeFile(file);
-    console.log(res);
-    return c.json(res);
+    try {
+      const res = await computeFile(file);
+      return c.json(res);
+    } catch (error) {
+      console.error(error);
+      c.status(500);
+      return c.json({ error: String(error) });
+    }
   },
 );
 
