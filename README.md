@@ -25,7 +25,7 @@ or in plain HTML
   action="http://localhost:4000/guess-pdf"
   enctype="multipart/form-data"
 >
-  <input type="file" name="file" accept="application/pdf" />
+  <input type="file" name="file" accept="application/pdf" required />
   <input type="hidden" name="iSignifToken" value="xxxx" />
   <input
     type="hidden"
