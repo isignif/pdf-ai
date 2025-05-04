@@ -117,7 +117,7 @@ export function useIsignifOCR(
     });
     console.log(`Uploaded the file`);
 
-    return data;
+    return { ...data, actId: act.id, url: `${isignifHost}/acts/${act.id}` };
   }
 
   return { computeFile };

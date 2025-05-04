@@ -17,7 +17,6 @@ app.use(logger());
 
 app.post(
   "/guess-pdf",
-  zValidator("header", z.object({ authorization: z.string() })),
   zValidator(
     "form",
     z.object({
@@ -26,18 +25,19 @@ app.post(
         .refine((file) => file.type === "application/pdf", {
           message: "File must be a PDF",
         }),
-      isignifApiUrl: z.string().default("http://isignif.fr/api/v1"),
+      iSignifToken: z.string(),
+      iSignifApiUrl: z.string().default("http://isignif.fr/api/v1"),
     }),
   ),
   async (c) => {
-    const { authorization: iSignifToken } = c.req.valid("header");
-    const { file, isignifApiUrl } = c.req.valid("form");
+    const { file, iSignifApiUrl, iSignifToken } = c.req.valid("form");
 
-    const { computeFile } = useIsignifOCR(mistral, isignifApiUrl, iSignifToken);
+    const { computeFile } = useIsignifOCR(mistral, iSignifApiUrl, iSignifToken);
 
     try {
       const res = await computeFile(file);
-      return c.json(res);
+
+      return c.redirect(res.url);
     } catch (error) {
       console.error(error);
       c.status(500);
