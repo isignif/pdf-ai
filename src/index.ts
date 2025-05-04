@@ -15,6 +15,8 @@ const app = new Hono();
 
 app.use(logger());
 
+app.get("/ping", (c) => c.text("pong"));
+
 app.post(
   "/guess-pdf",
   zValidator(
