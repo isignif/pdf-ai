@@ -3,7 +3,6 @@ import { Api as IsignifApi } from "./lib/isignif/Api.js";
 import { z } from "zod";
 import { getSystemPrompt } from "./prompts.ts";
 import { setTimeout } from "node:timers/promises";
-import { throws } from "node:assert";
 
 const waitPolite = () => setTimeout(500);
 
@@ -77,7 +76,7 @@ export function useIsignifOCR(
     await waitPolite();
     const ocrFileContent = ocrFile.map((p) => p.markdown).join("\n---\n");
     const res = await mistral.chat.parse({
-      model: "mistral-tiny-latest",
+      model: "ministral-3b-latest",
       messages: [
         {
           role: "system",
