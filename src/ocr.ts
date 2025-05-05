@@ -1,5 +1,5 @@
 import { Mistral } from "@mistralai/mistralai";
-import { Api as IsignifApi } from "./lib/isignif/Api.js";
+import { Api as IsignifApi } from "isignif-client";
 import { z } from "zod";
 import { getSystemPrompt } from "./prompts.ts";
 import { setTimeout } from "node:timers/promises";
