@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "node --experimental-strip-types --watch src/index.ts",
     "build": "tsc",
-    "start": "node --experimental-strip-types src/index.ts"
+    "start": "node --experimental-strip-types src/index.ts",
+    "test": "node --experimental-strip-types --test src/*.spec.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.1",

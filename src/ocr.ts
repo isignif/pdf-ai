@@ -2,9 +2,7 @@ import { Mistral } from "@mistralai/mistralai";
 import { Api as IsignifApi } from "isignif-client";
 import { z } from "zod";
 import { getSystemPrompt } from "./prompts.ts";
-import { setTimeout } from "node:timers/promises";
-
-const waitPolite = () => setTimeout(500);
+import { politeJobQueue } from "./jobQueue.ts";
 
 export function useIsignifOCR(
   mistral: Mistral,
@@ -23,16 +21,20 @@ export function useIsignifOCR(
   });
 
   async function getOcrPages(file: File) {
-    const fileRes = await mistral.files.upload({ file: file, purpose: "ocr" });
+    const fileRes = await politeJobQueue.add(() =>
+      mistral.files.upload({ file: file, purpose: "ocr" }),
+    );
     const fileUrl = await mistral.files.getSignedUrl({ fileId: fileRes.id });
 
-    const ocrRes = await mistral.ocr.process({
-      model: "mistral-ocr-latest",
-      document: {
-        documentUrl: fileUrl.url,
-        type: "document_url",
-      },
-    });
+    const ocrRes = await politeJobQueue.add(() =>
+      mistral.ocr.process({
+        model: "mistral-ocr-latest",
+        document: {
+          documentUrl: fileUrl.url,
+          type: "document_url",
+        },
+      }),
+    );
     return ocrRes.pages;
   }
 
@@ -73,22 +75,25 @@ export function useIsignifOCR(
     }
 
     const ocrFile = await getOcrPages(file);
-    await waitPolite();
     const ocrFileContent = ocrFile.map((p) => p.markdown).join("\n---\n");
-    const res = await mistral.chat.parse({
-      model: "ministral-3b-latest",
-      messages: [
-        {
-          role: "system",
-          content: await getSystemPrompt(),
-        },
-        {
-          role: "user",
-          content: `Bonjour, je souhaiterais créer un acte sur iSignif, voici le contenu de mon document qui contient les information de mon acte et des significations (il peut il y en avoir qu'une seule). Peux-tu t'occupper d'extraire les information afin que je puisse créer l'acte moi même ?\n\n\n${ocrFileContent}`,
-        },
-      ],
-      responseFormat: ResponseFormat,
-    });
+
+    const systemPrompt = await getSystemPrompt();
+    const res = await politeJobQueue.add(() =>
+      mistral.chat.parse({
+        model: "ministral-3b-latest",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt,
+          },
+          {
+            role: "user",
+            content: `Bonjour, je souhaiterais créer un acte sur iSignif, voici le contenu de mon document qui contient les information de mon acte et des significations (il peut il y en avoir qu'une seule). Peux-tu t'occupper d'extraire les information afin que je puisse créer l'acte moi même ?\n\n\n${ocrFileContent}`,
+          },
+        ],
+        responseFormat: ResponseFormat,
+      }),
+    );
     const data = ResponseFormat.parse(res.choices?.at(0)?.message?.parsed);
 
     const actTypes = await isignifApi.actTypes.actTypesList();
